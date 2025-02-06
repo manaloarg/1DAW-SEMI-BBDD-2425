@@ -44,6 +44,10 @@ jobs:
       - name: Run Student Query
         run: |
           mysql -h 127.0.0.1 -u root -proot testdb < student_solution.sql > output.txt
+    
+      - name: Show output.txt content
+        run: cat output.txt
+
 
       - name: Compare Output with Expected Results
         run: diff -q output.txt expected_output.txt
