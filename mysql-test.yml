@@ -1,0 +1,47 @@
+name: MySQL Test
+
+on: [push, pull_request]
+
+jobs:
+  test-mysql:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdb
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install MySQL Client
+        run: sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL to be Ready
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -u root -proot --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+        shell: bash
+
+      - name: Create Tables and Insert Data
+        run: |
+          mysql -h 127.0.0.1 -u root -proot testdb < setup.sql
+
+      - name: Run Student Queries
+        run: |
+          mysql -h 127.0.0.1 -u root -proot testdb < student_solution.sql > output.txt
+
+      - name: Compare Output with Expected Results
+        run: diff -q output.txt expected_output.txt
