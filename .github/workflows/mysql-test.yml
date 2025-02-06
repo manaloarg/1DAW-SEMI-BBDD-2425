@@ -1,0 +1,49 @@
+name: MySQL Test
+on: [push, pull_request]
+
+jobs:
+  test-mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0  # Versió de MySQL
+        env:
+          MYSQL_ROOT_PASSWORD: root  # Contrasenya per root
+          MYSQL_DATABASE: testdb      # Base de dades de prova
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install MySQL Client
+        run: sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL to be Ready
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 --silent; then
+              echo "MySQL is up!"
+              exit 0
+            fi
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+          echo "MySQL did not start in time!" && exit 1
+
+      - name: Initialize Database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot testdb < setup.sql
+
+      - name: Run Student Query
+        run: |
+          mysql -h 127.0.0.1 -u root -proot testdb < student_solution.sql > output.txt
+
+      - name: Compare Output with Expected Results
+        run: diff -q output.txt expected_output.txt
