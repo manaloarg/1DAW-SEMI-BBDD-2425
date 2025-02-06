@@ -1,2 +1,3 @@
-1 Maria 85
-2 Joan 90
+id	nom	nota
+1	Maria	85
+2	Joan	90
