@@ -9,7 +9,7 @@ jobs:
         image: mysql:8.0  # Versió de MySQL
         env:
           MYSQL_ROOT_PASSWORD: root  # Contrasenya per root
-          MYSQL_DATABASE: testdb      # Base de dades de prova
+          MYSQL_DATABASE: jardineria      # Base de dades de prova
         ports:
           - 3306:3306
         options: >-
@@ -39,11 +39,11 @@ jobs:
 
       - name: Initialize Database
         run: |
-          mysql -h 127.0.0.1 -u root -proot testdb < setup.sql
+          mysql -h 127.0.0.1 -u root -proot jardineria < setup.sql
 
       - name: Run Student Query
         run: |
-          mysql -h 127.0.0.1 -u root -proot testdb < student_solution.sql > output.txt
+          mysql -h 127.0.0.1 -u root -proot jardineria < student_solution.sql > output.txt
     
       - name: Show output.txt content
         run: cat output.txt
