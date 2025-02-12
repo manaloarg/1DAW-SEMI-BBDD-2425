@@ -1,5 +1,4 @@
 import mysql.connector
-from tabulate import tabulate
 
 def validate_database():
     expected_tables = {
@@ -46,34 +45,39 @@ def validate_database():
     # Verificar que existen las tablas esperadas
     cursor.execute("SHOW TABLES;")
     found_tables = {table[0] for table in cursor.fetchall()}
-    report.append(["Tablas", "✅ Correcto" if found_tables == set(expected_tables.keys()) else "❌ ERROR"])
+    if found_tables == set(expected_tables.keys()):
+        report.append("✅ Todas las tablas están correctamente creadas.")
+    else:
+        report.append(f"❌ ERROR: Tablas esperadas {set(expected_tables.keys())} pero encontradas {found_tables}")
     
     # Verificar las columnas de cada tabla
     for table, expected_columns in expected_tables.items():
         cursor.execute(f"DESCRIBE `{table}`;")
         found_columns = {col[0] for col in cursor.fetchall()}
-        status = "✅ Correcto" if found_columns == expected_columns else "❌ ERROR"
-        report.append([f"Columnas en {table}", status])
+        if found_columns == expected_columns:
+            report.append(f"✅ {table}: Columnas correctas.")
+        else:
+            report.append(f"❌ ERROR en {table}: columnas esperadas {expected_columns}, pero encontradas {found_columns}")
     
     # Verificar claves primarias
     for table, expected_pk in expected_primary_keys.items():
         cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY';")
         found_pk = {row[4] for row in cursor.fetchall()}
-        status = "✅ Correcto" if found_pk == expected_pk else "❌ ERROR"
-        report.append([f"Clave primaria en {table}", status])
+        if found_pk == expected_pk:
+            report.append(f"✅ {table}: Clave primaria correcta.")
+        else:
+            report.append(f"❌ ERROR en {table}: clave primaria esperada {expected_pk}, pero encontrada {found_pk}")
     
     # Verificar claves foráneas
     for table, expected_fks in expected_foreign_keys.items():
         cursor.execute(f"SELECT COLUMN_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{table}' AND REFERENCED_TABLE_NAME IS NOT NULL;")
         found_fks = {row[0]: row[1] for row in cursor.fetchall()}
-        status = "✅ Correcto" if found_fks == expected_fks else "❌ ERROR"
-        report.append([f"Claves foráneas en {table}", status])
+        if found_fks == expected_fks:
+            report.append(f"✅ {table}: Claves foráneas correctas.")
+        else:
+            report.append(f"❌ ERROR en {table}: claves foráneas esperadas {expected_fks}, pero encontradas {found_fks}")
     
-    summary = tabulate(report, headers=["Validación", "Estado"], tablefmt="github")
-    with open(os.environ['GITHUB_STEP_SUMMARY'], "w") as summary_file:
-        summary_file.write(summary)
-    
-    print(summary)
+    print("\n".join(report))
     conn.close()
 
 if __name__ == "__main__":
