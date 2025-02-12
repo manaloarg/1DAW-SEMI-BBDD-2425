@@ -1,4 +1,5 @@
 import mysql.connector
+import pandas as pd
 
 def validate_database():
     expected_tables = {
@@ -32,7 +33,6 @@ def validate_database():
         "pago": {"codigo_cliente": "cliente"},
     }
 
-
     conn = mysql.connector.connect(
         host="127.0.0.1",
         user="root",
@@ -41,49 +41,46 @@ def validate_database():
     )
     cursor = conn.cursor()
     
-    report = []
+    results = []
     
     # Verificar que existen las tablas esperadas
     cursor.execute("SHOW TABLES;")
     found_tables = {table[0] for table in cursor.fetchall()}
-    if found_tables == set(expected_tables.keys()):
-        report.append("✅ Todas las tablas están correctamente creadas.")
-    else:
-        report.append(f"❌ ERROR: Tablas esperadas {set(expected_tables.keys())} pero encontradas {found_tables}")
+    for table in expected_tables.keys():
+        status = "✅" if table in found_tables else "❌"
+        results.append(["Tabla", table, status])
     
     # Verificar las columnas de cada tabla
     for table, expected_columns in expected_tables.items():
         cursor.execute(f"DESCRIBE `{table}`;")
         found_columns = {col[0] for col in cursor.fetchall()}
-        if found_columns == expected_columns:
-            report.append(f"✅ {table}: Columnas correctas.")
-        else:
-            report.append(f"❌ ERROR en {table}: columnas esperadas {expected_columns}, pero encontradas {found_columns}")
+        status = "✅" if found_columns == expected_columns else "❌"
+        results.append(["Columnas", table, status])
     
     # Verificar claves primarias
     for table, expected_pk in expected_primary_keys.items():
         cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY';")
         found_pk = {row[4] for row in cursor.fetchall()}
-        if found_pk == expected_pk:
-            report.append(f"✅ {table}: Clave primaria correcta.")
-        else:
-            report.append(f"❌ ERROR en {table}: clave primaria esperada {expected_pk}, pero encontrada {found_pk}")
+        status = "✅" if found_pk == expected_pk else "❌"
+        results.append(["Clave Primaria", table, status])
     
     # Verificar claves foráneas
     for table, expected_fks in expected_foreign_keys.items():
         cursor.execute(f"SELECT COLUMN_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{table}' AND REFERENCED_TABLE_NAME IS NOT NULL;")
         found_fks = {row[0]: row[1] for row in cursor.fetchall()}
-        if found_fks == expected_fks:
-            report.append(f"✅ {table}: Claves foráneas correctas.")
-        else:
-            report.append(f"❌ ERROR en {table}: claves foráneas esperadas {expected_fks}, pero encontradas {found_fks}")
+        status = "✅" if found_fks == expected_fks else "❌"
+        results.append(["Clave Foránea", table, status])
     
-    print("\n".join(report))
     conn.close()
-
-    # Guardar en archivo de reporte
-    with open("report.txt", "w") as f:
-        f.write("\n".join(report))
+    
+    # Crear DataFrame para mostrar
+    df = pd.DataFrame(results, columns=["Tipo de Validación", "Tabla", "Estado"])
+    print(df)
+    
+    # Guardar el reporte en Markdown
+    with open("reporte_validacion.md", "w") as f:
+        f.write("# Reporte de Validación de Base de Datos\n\n")
+        f.write(df.to_markdown(index=False))
 
 if __name__ == "__main__":
     validate_database()
