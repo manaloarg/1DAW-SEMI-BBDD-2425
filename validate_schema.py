@@ -75,10 +75,10 @@ def validate_database():
         report_lines.append(f"- {table}: {status}")
     
     conn.close()
-    
-    # Guardar el reporte en Markdown
-    with open("reporte_validacion.md", "w") as f:
-        f.write("\n".join(report_lines))
+
+    # Guardar en archivo de reporte
+    with open("report.txt", "w") as f:
+        f.write("\n".join(report))
 
 if __name__ == "__main__":
     validate_database()
