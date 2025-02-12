@@ -1,5 +1,7 @@
 DROP DATABASE IF EXISTS jardineria;
+CREATE DATABASE jardineria CHARACTER SET utf8mb4;
 USE jardineria;
+
 CREATE TABLE Oficinas (
   CodigoOficina varchar(10) NOT NULL,
   Ciudad varchar(30) NOT NULL,
