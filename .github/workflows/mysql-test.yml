@@ -44,5 +44,15 @@ jobs:
       run: |
         mysql -h 127.0.0.1 -u root -proot jardineria -e "SHOW TABLES;"
         
+    # CONFIGURAR PYTHON E INSTALAR DEPENDENCIAS
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: pip install mysql-connector-python
+
+    # EJECUTAR VALIDACIÓN DE BASE DE DATOS
     - name: Validate database schema
       run: python validate_schema.py
