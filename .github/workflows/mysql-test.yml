@@ -58,8 +58,11 @@ jobs:
     - name: Validate database schema
       run: python validate_schema.py
 
-    - name: Show Report in Summary
-      run: |
-        echo "## Database Validation Report" >> $GITHUB_STEP_SUMMARY          
-        echo "" >> $GITHUB_STEP_SUMMARY
-        cat report.txt >> $GITHUB_STEP_SUMMARY
+    #- name: Show Report in Summary
+    #  run: |
+        #echo "## Database Validation Report" >> $GITHUB_STEP_SUMMARY          
+        #echo "" >> $GITHUB_STEP_SUMMARY
+        #cat report.txt >> $GITHUB_STEP_SUMMARY
+        
+    - name: 📢 Mostrar Reporte de Validación en Summary
+      run: cat reporte_validacion.md
