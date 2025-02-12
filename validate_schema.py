@@ -13,6 +13,26 @@ def validate_database():
         "pago": {"codigo_cliente", "forma_pago", "id_transaccion", "fecha_pago", "total"},
     }
 
+    expected_primary_keys = {
+        "oficina": {"codigo_oficina"},
+        "empleado": {"codigo_empleado"},
+        "gama_producto": {"gama"},
+        "cliente": {"codigo_cliente"},
+        "pedido": {"codigo_pedido"},
+        "producto": {"codigo_producto"},
+        "detalle_pedido": {"codigo_pedido", "codigo_producto"},
+        "pago": {"codigo_cliente", "id_transaccion"},
+    }
+
+    expected_foreign_keys = {
+        "empleado": {"codigo_oficina": "oficina", "codigo_jefe": "empleado"},
+        "cliente": {"codigo_empleado_rep_ventas": "empleado"},
+        "pedido": {"codigo_cliente": "cliente"},
+        "producto": {"gama": "gama_producto"},
+        "detalle_pedido": {"codigo_pedido": "pedido", "codigo_producto": "producto"},
+        "pago": {"codigo_cliente": "cliente"},
+    }
+
     conn = mysql.connector.connect(
         host="127.0.0.1",
         user="root",
@@ -29,6 +49,30 @@ def validate_database():
     report_lines.append("## 📌 Verificación de Tablas")
     for table in expected_tables.keys():
         status = "✅ Correcta" if table in found_tables else "❌ Faltante"
+        report_lines.append(f"- **{table}**: {status}")
+    
+    # Verificar columnas
+    report_lines.append("\n## 🏷️ Verificación de Columnas")
+    for table, expected_columns in expected_tables.items():
+        cursor.execute(f"DESCRIBE `{table}`;")
+        found_columns = {col[0] for col in cursor.fetchall()}
+        status = "✅ Correctas" if found_columns == expected_columns else "❌ Incorrectas"
+        report_lines.append(f"- **{table}**: {status}")
+    
+    # Verificar claves primarias
+    report_lines.append("\n## 🔑 Verificación de Claves Primarias")
+    for table, expected_pk in expected_primary_keys.items():
+        cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY';")
+        found_pk = {row[4] for row in cursor.fetchall()}
+        status = "✅ Correcta" if found_pk == expected_pk else "❌ Incorrecta"
+        report_lines.append(f"- **{table}**: {status}")
+    
+    # Verificar claves foráneas
+    report_lines.append("\n## 🔗 Verificación de Claves Foráneas")
+    for table, expected_fks in expected_foreign_keys.items():
+        cursor.execute(f"SELECT COLUMN_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{table}' AND REFERENCED_TABLE_NAME IS NOT NULL;")
+        found_fks = {row[0]: row[1] for row in cursor.fetchall()}
+        status = "✅ Correctas" if found_fks == expected_fks else "❌ Incorrectas"
         report_lines.append(f"- **{table}**: {status}")
     
     # Guardar reporte en archivo Markdown
