@@ -31,7 +31,8 @@ def validate_database():
         "detalle_pedido": {"codigo_pedido": "pedido", "codigo_producto": "producto"},
         "pago": {"codigo_cliente": "cliente"},
     }
-    
+
+    try:
     conn = mysql.connector.connect(
         host="127.0.0.1",
         user="root",
