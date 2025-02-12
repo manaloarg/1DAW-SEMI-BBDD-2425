@@ -32,7 +32,7 @@ def validate_database():
         "pago": {"codigo_cliente": "cliente"},
     }
 
-    try:
+
     conn = mysql.connector.connect(
         host="127.0.0.1",
         user="root",
@@ -80,9 +80,6 @@ def validate_database():
     
     print("\n".join(report))
     conn.close()
-
-    except Exception as e:
-        report.append(f"❌ ERROR en la conexión o consulta SQL: {str(e)}")
 
     # Guardar en archivo de reporte
     with open("report.txt", "w") as f:
