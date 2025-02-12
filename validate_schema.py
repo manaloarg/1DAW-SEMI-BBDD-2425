@@ -1,9 +1,14 @@
 import mysql.connector
 
 expected_tables = {
-    "clientes": {"idCliente", "nombre", "direccion", "telefono"},
-    "productos": {"idProducto", "nombre", "precio", "stock"},
-    "pedidos": {"idPedido", "idCliente", "fecha", "total"},
+    "Empleados": {"idEmpleado", "nombre", "apellidos", "puesto", "idJefe"},
+    "Oficinas": {"idOficina", "ciudad", "pais", "codigoPostal"},
+    "DetallePedidos": {"idPedido", "idProducto", "cantidad", "precioUnidad"},
+    "Pedidos": {"idPedido", "idCliente", "fecha", "estado"},
+    "GamasProductos": {"gama", "descripcion"},
+    "Clientes": {"idCliente", "nombre", "telefono", "direccion"},
+    "Pagos": {"idPago", "idCliente", "fecha", "importe"},
+    "Productos": {"idProducto", "nombre", "gama", "precio"},
 }
 
 conn = mysql.connector.connect(host="127.0.0.1", user="root", password="root", database="jardineria")
