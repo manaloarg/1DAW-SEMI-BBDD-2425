@@ -1,84 +1,59 @@
-import mysql.connector
 
-def validate_database():
-    expected_tables = {
-        "Oficinas": {"CodigoOficina", "Ciudad", "Pais", "Region", "CodigoPostal", "Telefono", "LineaDireccion1", "LineaDireccion2"},
-        "Empleados": {"CodigoEmpleado", "Nombre", "Apellido1", "Apellido2", "Extension", "Email", "CodigoOficina", "CodigoJefe", "Puesto"},
-        "GamasProductos": {"Gama", "DescripcionTexto", "DescripcionHTML", "Imagen"},
-        "Clientes": {"CodigoCliente", "NombreCliente", "NombreContacto", "ApellidoContacto", "Telefono", "Fax", "LineaDireccion1", "LineaDireccion2", "Ciudad", "Region", "Pais", "CodigoPostal", "CodigoEmpleadoRepVentas", "LimiteCredito"},
-        "Pedidos": {"CodigoPedido", "FechaPedido", "FechaEsperada", "FechaEntrega", "Estado", "Comentarios", "CodigoCliente"},
-        "Productos": {"CodigoProducto", "Nombre", "Gama", "Dimensiones", "Proveedor", "Descripcion", "CantidadEnStock", "PrecioVenta", "PrecioProveedor"},
-        "DetallePedidos": {"CodigoPedido", "CodigoProducto", "Cantidad", "PrecioUnidad", "NumeroLinea"},
-        "Pagos": {"CodigoCliente", "FormaPago", "IDTransaccion", "FechaPago", "Cantidad"},
-    }
-    
-    expected_primary_keys = {
-        "Oficinas": {"CodigoOficina"},
-        "Empleados": {"CodigoEmpleado"},
-        "GamasProductos": {"Gama"},
-        "Clientes": {"CodigoCliente"},
-        "Pedidos": {"CodigoPedido"},
-        "Productos": {"CodigoProducto"},
-        "DetallePedidos": {"CodigoPedido", "CodigoProducto"},
-        "Pagos": {"CodigoCliente", "IDTransaccion"},
-    }
-    
-    expected_foreign_keys = {
-        "Empleados": {"CodigoOficina": "Oficinas", "CodigoJefe": "Empleados"},
-        "Clientes": {"CodigoEmpleadoRepVentas": "Empleados"},
-        "Pedidos": {"CodigoCliente": "Clientes"},
-        "Productos": {"Gama": "GamasProductos"},
-        "DetallePedidos": {"CodigoPedido": "Pedidos", "CodigoProducto": "Productos"},
-        "Pagos": {"CodigoCliente": "Clientes"},
-    }
-    
-    conn = mysql.connector.connect(
-        host="127.0.0.1",
-        user="root",
-        password="root",
-        database="jardineria"
-    )
-    cursor = conn.cursor()
-    
-    report = []
-    
-    # Verificar que existen las tablas esperadas
-    cursor.execute("SHOW TABLES;")
-    found_tables = {table[0] for table in cursor.fetchall()}
-    if found_tables == set(expected_tables.keys()):
-        report.append("✅ Todas las tablas están correctamente creadas.")
-    else:
-        report.append(f"❌ ERROR: Tablas esperadas {set(expected_tables.keys())} pero encontradas {found_tables}")
-    
-    # Verificar las columnas de cada tabla
-    for table, expected_columns in expected_tables.items():
-        cursor.execute(f"DESCRIBE `{table}`;")
-        found_columns = {col[0] for col in cursor.fetchall()}
-        if found_columns == expected_columns:
-            report.append(f"✅ {table}: Columnas correctas.")
-        else:
-            report.append(f"❌ ERROR en {table}: columnas esperadas {expected_columns}, pero encontradas {found_columns}")
-    
-    # Verificar claves primarias
-    for table, expected_pk in expected_primary_keys.items():
-        cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY';")
-        found_pk = {row[4] for row in cursor.fetchall()}
-        if found_pk == expected_pk:
-            report.append(f"✅ {table}: Clave primaria correcta.")
-        else:
-            report.append(f"❌ ERROR en {table}: clave primaria esperada {expected_pk}, pero encontrada {found_pk}")
-    
-    # Verificar claves foráneas
-    for table, expected_fks in expected_foreign_keys.items():
-        cursor.execute(f"SELECT COLUMN_NAME, REFERENCED_TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME = '{table}' AND REFERENCED_TABLE_NAME IS NOT NULL;")
-        found_fks = {row[0]: row[1] for row in cursor.fetchall()}
-        if found_fks == expected_fks:
-            report.append(f"✅ {table}: Claves foráneas correctas.")
-        else:
-            report.append(f"❌ ERROR en {table}: claves foráneas esperadas {expected_fks}, pero encontradas {found_fks}")
-    
-    print("\n".join(report))
-    conn.close()
+name: Test Base de Datos Jardinería
 
-if __name__ == "__main__":
-    validate_database()
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-mysql:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: jardineria
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h localhost" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install MySQL client
+      run: sudo apt-get install -y mysql-client
+
+    - name: Wait for MySQL to be ready
+      run: |
+        until mysqladmin ping -h 127.0.0.1 --silent; do
+          echo "Waiting for MySQL..."
+          sleep 2
+        done
+
+    - name: Execute SQL script
+      run: |
+        mysql -h 127.0.0.1 -u root -proot jardineria < jardineria.sql
+
+    - name: Validate table structure
+      run: |
+        mysql -h 127.0.0.1 -u root -proot jardineria -e "SHOW TABLES;"
+        
+    # CONFIGURAR PYTHON E INSTALAR DEPENDENCIAS
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: pip install mysql-connector-python
+
+    # EJECUTAR VALIDACIÓN DE BASE DE DATOS
+    - name: Validate database schema
+      run: python validate_schema.py
