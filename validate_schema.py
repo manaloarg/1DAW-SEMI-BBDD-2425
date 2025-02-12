@@ -80,5 +80,12 @@ def validate_database():
     print("\n".join(report))
     conn.close()
 
+    except Exception as e:
+        report.append(f"❌ ERROR en la conexión o consulta SQL: {str(e)}")
+
+    # Guardar en archivo de reporte
+    with open("report.txt", "w") as f:
+        f.write("\n".join(report))
+
 if __name__ == "__main__":
     validate_database()
